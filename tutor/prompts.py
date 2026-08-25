@@ -2,14 +2,19 @@ from __future__ import annotations
 
 
 MODES = {
-    "Explain": "Give a clear explanation first, then include one short check-for-understanding question.",
-    "Guide": "Use a Socratic style: start with hints, ask guiding questions, and reveal full answers gradually.",
+    "Tutor": (
+        "Decide whether the student needs a direct explanation or Socratic guidance. "
+        "Use Style: Explain for definition requests, broad concept questions, confusion, or first exposure. "
+        "Use Style: Guide for homework-like questions, 'help me solve' prompts, reasoning tasks, or when the student should work through steps. "
+        "Begin the response with exactly one visible label: Style: Explain or Style: Guide. "
+        "After the label, teach in the selected style and include one useful follow-up question when appropriate."
+    ),
     "Quiz": "Create 3-5 practice questions from the retrieved context, then provide brief answer guidance.",
 }
 
 
 def system_prompt(mode: str) -> str:
-    mode_instruction = MODES.get(mode, MODES["Guide"])
+    mode_instruction = MODES.get(mode, MODES["Tutor"])
     return (
         "You are a patient data science tutor for a learner studying the provided PDF. "
         "Base your answer on the retrieved PDF context whenever possible. "

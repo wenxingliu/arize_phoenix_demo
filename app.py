@@ -23,7 +23,7 @@ def init_messages() -> None:
         st.session_state.messages = [
             {
                 "role": "assistant",
-                "content": "Ask me about a concept from Principles of Data Science, or choose Quiz mode for practice.",
+                "content": "Ask me about a concept from Principles of Data Science. I will decide whether to explain directly or guide you step by step.",
             }
         ]
 
@@ -33,7 +33,7 @@ init_messages()
 
 with st.sidebar:
     st.title("Tutor")
-    mode = st.radio("Mode", list(MODES.keys()), index=1)
+    mode = st.radio("Mode", list(MODES.keys()), index=0)
     top_k = st.slider("PDF context chunks", min_value=3, max_value=8, value=5)
     st.caption(f"Model: `{settings.model}`")
 
