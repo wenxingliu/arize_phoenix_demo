@@ -1,0 +1,8 @@
+env/
+.env
+.tutor_state.json
+.tutor_index.json
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.streamlit/

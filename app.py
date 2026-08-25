@@ -1,0 +1,97 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import streamlit as st
+
+from tutor.config import load_settings, require_pdf
+from tutor.openai_client import answer_question, ensure_vector_store
+from tutor.pdf_index import load_or_build_index, search_chunks
+from tutor.prompts import MODES
+
+
+st.set_page_config(page_title="Data Science Tutor", page_icon="DS", layout="wide")
+
+
+@st.cache_resource(show_spinner=False)
+def cached_index(pdf_path: str, index_path: str):
+    return load_or_build_index(Path(pdf_path), Path(index_path))
+
+
+def init_messages() -> None:
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {
+                "role": "assistant",
+                "content": "Ask me about a concept from Principles of Data Science, or choose Quiz mode for practice.",
+            }
+        ]
+
+
+settings = load_settings()
+init_messages()
+
+with st.sidebar:
+    st.title("Tutor")
+    mode = st.radio("Mode", list(MODES.keys()), index=1)
+    top_k = st.slider("PDF context chunks", min_value=3, max_value=8, value=5)
+    st.caption(f"Model: `{settings.model}`")
+
+st.title("Data Science PDF Tutor")
+st.caption("Grounded in `Principles-of-Data-Science-WEB.pdf`")
+
+try:
+    require_pdf(settings.pdf_path)
+except FileNotFoundError as exc:
+    st.error(str(exc))
+    st.stop()
+
+if not settings.api_key:
+    st.error("Set `OPENAI_API_KEY` in `.env` before asking questions.")
+    st.stop()
+
+with st.spinner("Preparing PDF index..."):
+    chunks = cached_index(str(settings.pdf_path), str(settings.index_path))
+
+if not chunks:
+    st.error("No text could be extracted from the PDF.")
+    st.stop()
+
+if "vector_store_id" not in st.session_state:
+    try:
+        with st.spinner("Preparing OpenAI file search..."):
+            st.session_state.vector_store_id = ensure_vector_store(
+                settings.api_key,
+                settings.pdf_path,
+                settings.state_path,
+            )
+    except Exception as exc:
+        st.warning(f"OpenAI file search is unavailable, using local PDF context only. Details: {exc}")
+        st.session_state.vector_store_id = None
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+question = st.chat_input("Ask a data science question")
+if question:
+    st.session_state.messages.append({"role": "user", "content": question})
+    with st.chat_message("user"):
+        st.markdown(question)
+
+    retrieved = search_chunks(question, chunks, limit=top_k)
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            try:
+                answer = answer_question(
+                    api_key=settings.api_key,
+                    model=settings.model,
+                    question=question,
+                    mode=mode,
+                    chunks=retrieved,
+                    vector_store_id=st.session_state.vector_store_id,
+                )
+            except Exception as exc:
+                answer = f"I could not call the model. Details: `{exc}`"
+            st.markdown(answer)
+    st.session_state.messages.append({"role": "assistant", "content": answer})
