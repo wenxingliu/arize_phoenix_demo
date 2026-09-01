@@ -46,7 +46,7 @@ Use the OpenAI Responses API and vector stores/file search, consistent with curr
 
 - `app.py` owns the Streamlit UI and calls tutor services.
 - A small internal package, for example `tutor/`, owns:
-  - `openai_client.py`: Responses API calls and vector store setup.
+  - `llm_client.py`: LLM API calls and vector store setup.
   - `pdf_index.py`: local extraction, chunking, and fallback search.
   - `prompts.py`: tutor instructions, automatic Explain/Guide selection rules, and quiz prompt fragments.
   - `config.py`: env vars, paths, and defaults.

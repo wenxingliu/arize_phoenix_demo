@@ -11,7 +11,7 @@ configure_datadog()
 import streamlit as st
 
 from tutor.config import load_settings, require_pdf
-from tutor.openai_client import answer_question, ensure_vector_store
+from tutor.llm_client import answer_question, ensure_vector_store
 from tutor.pdf_index import load_or_build_index, search_chunks
 from tutor.prompts import MODES
 
