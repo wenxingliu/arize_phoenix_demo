@@ -10,11 +10,13 @@ from .pdf_index import Chunk, format_context
 from .prompts import system_prompt, user_prompt
 
 
-def _make_client(api_key: str):
+def _make_client(api_key: str, base_url: str | None = None):
     try:
         from openai import OpenAI
     except ImportError as exc:
         raise RuntimeError("Install dependencies with `pip install -r requirements.txt`.") from exc
+    if base_url:
+        return OpenAI(api_key=api_key, base_url=base_url)
     return OpenAI(api_key=api_key)
 
 
@@ -71,13 +73,28 @@ def answer_question(
     *,
     api_key: str,
     model: str,
+    provider: str,
+    base_url: str | None,
     question: str,
     mode: str,
     chunks: list[Chunk],
     vector_store_id: str | None,
 ) -> str:
-    client = _make_client(api_key)
+    client = _make_client(api_key, base_url)
     local_context = format_context(chunks)
+    if provider == "kimi":
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt(mode)},
+                {"role": "user", "content": user_prompt(question, local_context)},
+            ],
+        )
+        content = response.choices[0].message.content
+        if content is None:
+            return ""
+        return content
+
     tools = []
     if vector_store_id:
         tools.append({"type": "file_search", "vector_store_ids": [vector_store_id]})
