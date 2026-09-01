@@ -12,7 +12,7 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Edit `.env` and set `OPENAI_API_KEY`.
+Edit `.env` and set `KIMI_API_KEY`.
 
 ## Run
 
@@ -35,7 +35,7 @@ The Datadog instrumentation creates a manual LLM span for each answered question
 On first run the app:
 
 - extracts and caches local page-aware PDF chunks in `.tutor_index.json`
-- uploads the PDF to an OpenAI vector store and caches IDs in `.tutor_state.json`
+- uses Kimi through Moonshot's OpenAI-compatible Chat Completions endpoint
 - answers questions with retrieved PDF context and tutor-oriented prompts
 
 ## Use

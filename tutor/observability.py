@@ -71,6 +71,7 @@ def call_with_llm_trace(
     input_data: str,
     mode: str,
     model: str,
+    provider: str,
     retrieved_chunk_count: int,
     top_k: int | None,
     vector_store_enabled: bool,
@@ -88,7 +89,7 @@ def call_with_llm_trace(
     if top_k is not None:
         tags["tutor.top_k"] = str(top_k)
 
-    @llm(model_name=model, model_provider="openai", name="tutor.answer_question", session_id=session_id)
+    @llm(model_name=model, model_provider=provider, name="tutor.answer_question", session_id=session_id)
     def traced_call() -> T:
         response = call()
         annotate_kwargs = {

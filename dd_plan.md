@@ -2,13 +2,17 @@
 
 ## Summary
 
-Instrument the Streamlit tutor for Datadog LLM Observability only, targeting local development. The app uses Datadog's Python `ddtrace` SDK with agentless export, so no local Datadog Agent and no `ddtrace-run` wrapper are required.
+Instrument the Streamlit tutor for Datadog LLM Observability while using Kimi through Moonshot's OpenAI-compatible API. The app uses Datadog's Python `ddtrace` SDK with agentless export, so no local Datadog Agent and no `ddtrace-run` wrapper are required.
 
-Primary success criteria: each answered question creates a Datadog LLM span named `tutor.answer_question` with service/app tags, latency, errors, token metrics when available, Datadog session grouping, input/output capture when enabled, and safe app metadata.
+Primary success criteria: each answered question uses Kimi by default and creates a Datadog LLM span named `tutor.answer_question` with service/app tags, latency, errors, token metrics when available, Datadog session grouping, input/output capture when enabled, and safe app metadata.
 
 ## Implemented Changes
 
 - Add `ddtrace` to `requirements.txt`.
+- Use `LLM_PROVIDER=kimi` by default, with `KIMI_API_KEY`, `KIMI_MODEL`, and `KIMI_BASE_URL` configuration.
+- Call Kimi via the OpenAI Python SDK with `base_url=https://api.moonshot.ai/v1` and `chat.completions.create()`.
+- Keep `LLM_PROVIDER=openai` supported as an optional fallback, but do not reuse `OPENAI_API_KEY` for Kimi.
+- Skip OpenAI vector-store `file_search` setup unless `LLM_PROVIDER=openai`; Kimi mode uses the existing local PDF retrieval context only.
 - Add Datadog local-dev variables to `.env.example` and `.env copy.example`.
 - Load `.env` and enable Datadog LLM Observability in `tutor/datadog_bootstrap.py`.
 - Call `configure_datadog()` at the top of `app.py`, before OpenAI client code can be used.
@@ -19,8 +23,15 @@ Primary success criteria: each answered question creates a Datadog LLM span name
 ## Required Environment
 
 ```bash
+LLM_PROVIDER=kimi
+KIMI_API_KEY=<your-kimi-api-key>
+KIMI_MODEL=kimi-k2.6
+KIMI_BASE_URL=https://api.moonshot.ai/v1
+
+# Optional if you switch LLM_PROVIDER=openai.
 OPENAI_API_KEY=<your-openai-api-key>
 OPENAI_MODEL=gpt-5-mini
+
 DD_LLMOBS_ENABLED=1
 DD_LLMOBS_AGENTLESS_ENABLED=1
 DD_LLMOBS_ML_APP=data-science-tutor
@@ -37,7 +48,7 @@ DD_API_KEY=<your-datadog-api-key>
 ## Span Metadata
 
 - Manual LLM span name: `tutor.answer_question`.
-- Model provider: `openai`.
+- Model provider: `kimi` by default, or `openai` when `LLM_PROVIDER=openai`.
 - Session id: generated UUID stored in `st.session_state.datadog_session_id`.
 - Metadata: `mode`, `retrieved_chunk_count`, `top_k`, `vector_store_enabled`.
 - Input/output capture: when `DD_LLMOBS_CAPTURE_IO=1`, span input is the user question and span output is the model answer.

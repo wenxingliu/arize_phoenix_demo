@@ -42,6 +42,7 @@ with st.sidebar:
     st.title("Tutor")
     mode = st.radio("Mode", list(MODES.keys()), index=0)
     top_k = st.slider("PDF context chunks", min_value=3, max_value=8, value=5)
+    st.caption(f"Provider: `{settings.provider}`")
     st.caption(f"Model: `{settings.model}`")
 
 st.title("Data Science PDF Tutor")
@@ -54,7 +55,10 @@ except FileNotFoundError as exc:
     st.stop()
 
 if not settings.api_key:
-    st.error("Set `OPENAI_API_KEY` in `.env` before asking questions.")
+    if settings.provider == "kimi":
+        st.error("Set `KIMI_API_KEY` in `.env` before asking questions.")
+    else:
+        st.error("Set `OPENAI_API_KEY` in `.env` before asking questions.")
     st.stop()
 
 with st.spinner("Preparing PDF index..."):
@@ -64,7 +68,9 @@ if not chunks:
     st.error("No text could be extracted from the PDF.")
     st.stop()
 
-if "vector_store_id" not in st.session_state:
+if settings.provider != "openai":
+    st.session_state.vector_store_id = None
+elif "vector_store_id" not in st.session_state:
     try:
         with st.spinner("Preparing OpenAI file search..."):
             st.session_state.vector_store_id = ensure_vector_store(
@@ -93,6 +99,8 @@ if question:
                 answer = answer_question(
                     api_key=settings.api_key,
                     model=settings.model,
+                    provider=settings.provider,
+                    base_url=settings.base_url,
                     question=question,
                     mode=mode,
                     chunks=retrieved,
