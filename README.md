@@ -20,6 +20,18 @@ Edit `.env` and set `KIMI_API_KEY`.
 env/bin/streamlit run app.py
 ```
 
+## Run with Datadog LLM Observability
+
+Set `DD_API_KEY`, `DD_SITE`, and `DD_LLMOBS_ENABLED=1` in `.env`, then run the same local Streamlit command:
+
+```bash
+env/bin/streamlit run app.py
+```
+
+The app loads Datadog configuration from `.env` during startup and enables agentless LLM Observability before creating the OpenAI client. You do not need to use `ddtrace-run` for local development.
+
+The Datadog instrumentation creates a manual LLM span for each answered question and records low-cardinality app metadata such as tutor mode, model, retrieved chunk count, selected `top_k`, whether OpenAI vector store file search was enabled, and token usage when the OpenAI response includes it. Each Streamlit browser session gets a generated Datadog session id, so multiple questions from the same tab can be grouped in Datadog. With `DD_LLMOBS_CAPTURE_IO=1`, it sends the user question as span input and the model answer as span output. It does not send the constructed prompt or retrieved PDF context.
+
 On first run the app:
 
 - extracts and caches local page-aware PDF chunks in `.tutor_index.json`
