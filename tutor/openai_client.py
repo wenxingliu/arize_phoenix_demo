@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import file_sha256
+from .observability import call_with_llm_trace
 from .pdf_index import Chunk, format_context
 from .prompts import system_prompt, user_prompt
 
@@ -75,6 +76,8 @@ def answer_question(
     mode: str,
     chunks: list[Chunk],
     vector_store_id: str | None,
+    top_k: int | None = None,
+    session_id: str | None = None,
 ) -> str:
     client = _make_client(api_key)
     local_context = format_context(chunks)
@@ -90,5 +93,14 @@ def answer_question(
     if tools:
         create_kwargs["tools"] = tools
 
-    response = client.responses.create(**create_kwargs)
+    response = call_with_llm_trace(
+        lambda: client.responses.create(**create_kwargs),
+        input_data=question,
+        mode=mode,
+        model=model,
+        retrieved_chunk_count=len(chunks),
+        top_k=top_k,
+        vector_store_enabled=bool(vector_store_id),
+        session_id=session_id,
+    )
     return response.output_text

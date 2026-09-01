@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+import uuid
 from pathlib import Path
+
+from tutor.datadog_bootstrap import configure_datadog
+
+
+configure_datadog()
 
 import streamlit as st
 
@@ -19,6 +25,7 @@ def cached_index(pdf_path: str, index_path: str):
 
 
 def init_messages() -> None:
+    st.session_state.setdefault("datadog_session_id", str(uuid.uuid4()))
     if "messages" not in st.session_state:
         st.session_state.messages = [
             {
@@ -90,6 +97,8 @@ if question:
                     mode=mode,
                     chunks=retrieved,
                     vector_store_id=st.session_state.vector_store_id,
+                    top_k=top_k,
+                    session_id=st.session_state.datadog_session_id,
                 )
             except Exception as exc:
                 answer = f"I could not call the model. Details: `{exc}`"
